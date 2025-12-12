@@ -5,7 +5,7 @@ import math
 
 import pyarrow.feather as feather
 from neo4j import Driver
-
+import polars as pl
 
 def load_connections_arrow(
     driver: Driver,
@@ -37,7 +37,7 @@ def load_connections_arrow(
     else:
         total_use = total
 
-    df = table.to_pandas()
+    df = pl.from_arrow(table)#.to_pandas()
     print("Pandas dataframe shape:", df.shape)
 
     expected_cols = [
@@ -64,7 +64,7 @@ def load_connections_arrow(
     print(f"Inserting {total_use} rows into Neo4j in batches of {batch_size}...")
 
     # turn into list of dicts once, then chunk
-    rows = df.to_dict(orient="records")
+    rows = df.to_dicts()#to_dict(orient="records")
 
     for start in range(0, total_use, batch_size):
         end = min(start + batch_size, total_use)
@@ -72,7 +72,7 @@ def load_connections_arrow(
         _insert_batch(driver, chunk)
         print(f"  Inserted rows {start}–{end}")
 
-    print("Finished loading connections via pyarrow/pandas.")
+    print("Finished loading connections via pyarrow/polars.")
 
 
 def _insert_batch(driver: Driver, rows: Iterable[Dict[str, Any]]) -> None:
