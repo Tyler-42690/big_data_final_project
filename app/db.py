@@ -1,8 +1,8 @@
-from neo4j import GraphDatabase
+from neo4j import Driver, GraphDatabase
 import os
 
 
-def get_driver():
+def get_driver() -> Driver:
     #use local host for local excution, use NEO4J_URI when using docker
     uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
     #uri = os.getenv("NEO4J_URI", "bolt://neo4j:7687")

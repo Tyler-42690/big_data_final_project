@@ -2,10 +2,18 @@
 
 from typing import Iterable, Dict, Any
 import math
+import logging
 
 import pyarrow.feather as feather
 from neo4j import Driver
 import polars as pl
+
+# Configure loading of CSV files
+logging.basicConfig(filename='output.log',
+    filemode='a', #Append mode               
+    level=logging.WARNING,         
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 def load_connections_arrow(
     driver: Driver,
@@ -38,7 +46,7 @@ def load_connections_arrow(
         total_use = total
 
     df = pl.from_arrow(table)#.to_pandas()
-    print("Pandas dataframe shape:", df.shape)
+    print("Polars dataframe shape:", df.shape)
 
     expected_cols = [
         "pre_pt_root_id",
@@ -54,6 +62,7 @@ def load_connections_arrow(
     ]
     missing = [c for c in expected_cols if c not in df.columns]
     if missing:
+        logging.error("Missing expected columns in feather file: %s", missing)
         raise ValueError(f"Missing expected columns in feather file: {missing}")
 
     if clear_graph:
@@ -83,6 +92,8 @@ def _insert_batch(driver: Driver, rows: Iterable[Dict[str, Any]]) -> None:
       - MERGE (:Neuron {root_id: pre_pt_root_id})
       - MERGE (:Neuron {root_id: post_pt_root_id})
       - MERGE (pre)-[:CONNECTS_TO {neuropil, ...}]->(post)
+
+    Row duplication is possible; MERGE ensures no duplicates are created.
     """
     cypher = """
     UNWIND $rows AS row
@@ -109,9 +120,11 @@ def _insert_batch(driver: Driver, rows: Iterable[Dict[str, Any]]) -> None:
 
 
 def _is_nan(x: Any) -> bool:
-    """Return True if x is a float NaN."""
-    try:
-        return isinstance(x, float) and math.isnan(x)
-    except Exception:
+    """Return True if x is a float NaN and log when detected."""
+    is_nan = isinstance(x, float) and math.isnan(x)
+    if is_nan:
+        logging.warning("NaN detected: %r", x)
+        return is_nan
+    else: 
         return False
 

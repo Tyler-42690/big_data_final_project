@@ -2,6 +2,7 @@
 
 from typing import List, Dict, Any
 from neo4j import Driver
+from neo4j.graph import Path
 
 
 def get_postsynaptic_partners(driver: Driver, root_id: int) -> List[Dict[str, Any]]:
@@ -54,7 +55,7 @@ def get_presynaptic_partners(driver: Driver, root_id: int) -> List[Dict[str, Any
         return [record.data() for record in result]
 
 
-def get_two_hop_upstream(driver: Driver, root_id: int):
+def get_two_hop_upstream(driver: Driver, root_id: int) -> List[Dict[str, Any]]:
     """
     Return 2-hop upstream chain: pre-of-pre.
 
@@ -73,7 +74,7 @@ def get_two_hop_upstream(driver: Driver, root_id: int):
         return [record.data() for record in result]
 
 
-def get_two_hop_downstream(driver: Driver, root_id: int):
+def get_two_hop_downstream(driver: Driver, root_id: int) -> List[Dict[str, Any]]:
     """
     Return 2-hop downstream chain: post-of-post.
 
@@ -92,7 +93,7 @@ def get_two_hop_downstream(driver: Driver, root_id: int):
         return [record.data() for record in result]
 
 
-def get_k_hop_downstream(driver: Driver, root_id: int, k: int):
+def get_k_hop_downstream(driver: Driver, root_id: int, k: int) -> List[Path]:
     """
     Return all nodes reachable within k hops downstream.
 
@@ -108,7 +109,7 @@ def get_k_hop_downstream(driver: Driver, root_id: int, k: int):
         return [record["p"] for record in result]
 
 
-def get_k_hop_upstream(driver: Driver, root_id: int, k: int):
+def get_k_hop_upstream(driver: Driver, root_id: int, k: int) -> List[Path]:
     """
     Return all nodes reachable within k hops upstream.
 
