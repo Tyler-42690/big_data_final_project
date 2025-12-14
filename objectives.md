@@ -41,7 +41,7 @@ Use Python with:
 
 ⦁	Mypy for type-checking (MINOR CODE ADJUSTMENT REQUIRED)
 
-⦁	Logging (NEEDS TO BE IMPLEMENTED)
+⦁	Logging (IMPLEMENTED IN ETL)
 
 ⦁	PyTest (at least 3 tests) (NEEDS TO BE IMPLEMENTED)
 
