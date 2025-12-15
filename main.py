@@ -9,7 +9,7 @@ from app.graph_query import (
 from app.simulate import simulate_silence, simulate_boost
 
 
-def main():
+def main() -> None:
     driver = get_driver()
     print("Connected to Neo4j.")
     test_connection(driver)
