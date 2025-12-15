@@ -19,3 +19,9 @@ python_version = "3.13"
 disallow_untyped_defs = true
 strict = false
 ignore_missing_imports = true
+[tool.setuptools]
+# Use the find method to automatically discover packages in 'src'
+package-dir = {"" = "src"}
+[project.scripts]
+# Define a script named 'big-data-final' that runs your main function
+"big-data-final" = "app.main:main"

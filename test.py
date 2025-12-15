@@ -8,8 +8,8 @@ from typing import Generator
 import pytest
 from neo4j import Driver
 
-from app.db import get_driver, close_driver, check_connection
-from app.etl import load_connections_arrow
+from src.app.db import get_driver, close_driver, check_connection
+from src.app.etl import load_connections_arrow
 
 # 1. FIXTURE: Handles Setup and Teardown automatically
 @pytest.fixture(scope="module")
