@@ -1,12 +1,12 @@
-from src.app.db import get_driver, check_connection, close_driver
-from src.app.etl import load_connections_arrow
-from src.app.graph_query import (
+from .db import get_driver, check_connection, close_driver
+from .etl import load_connections_arrow
+from .graph_query import (
     get_postsynaptic_partners,
     get_presynaptic_partners,
     get_two_hop_upstream,
     get_two_hop_downstream,
 )
-from src.app.simulate import simulate_silence, simulate_boost
+from .simulate import simulate_silence, simulate_boost
 
 
 def main() -> None:
