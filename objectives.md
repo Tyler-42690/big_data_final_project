@@ -39,9 +39,9 @@ Use Python with:
 
 ⦁	Pydantic models for schema validation (NOT DONE, NEEDS IMPLEMENTATION)
 
-⦁	Mypy for type-checking (MINOR CODE ADJUSTMENT REQUIRED)
+⦁	Mypy for type-checking (DONE)
 
-⦁	Logging (IMPLEMENTED IN ETL)
+⦁	Logging (DONE)
 
 ⦁	PyTest (at least 3 tests) (NEEDS TO BE IMPLEMENTED)
 

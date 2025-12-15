@@ -1,18 +1,18 @@
 services:
   mypy:
-    image: python:3.11
+    image: python:3.11-slim-buster
     container_name: mypy_checker
     volumes:
       - .:/app
     working_dir: /app
-    command: sh -c "pip install --no-cache-dir . mypy && mypy ."
+    command: sh -c "uv pip install --no-cache-dir . mypy && mypy ."
   python_app:
     image: python:3.11-slim-buster
     container_name: python_with_polars
     volumes:
       - .:/app
     working_dir: /app
-    command: sh -c "pip install --no-cache-dir . && python main.py"
+    command: sh -c "uv pip install --no-cache-dir . && python main.py"
     environment:
       - PYTHONUNBUFFERED=1
       - NEO4J_URI=bolt://neo4j:7687
