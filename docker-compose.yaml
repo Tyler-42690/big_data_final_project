@@ -1,13 +1,13 @@
 services:
   mypy:
-    image: python:3.11-slim-buster
+    image: python:3.13-slim-buster
     container_name: mypy_checker
     volumes:
       - .:/app
     working_dir: /app
     command: sh -c "uv pip install --no-cache-dir . mypy && mypy ."
   pytest:
-    image: python:3.11-slim-buster
+    image: python:3.13-slim-buster
     container_name: app_tester
     volumes:
       - .:/app # Mount your app code and tests
@@ -24,10 +24,10 @@ services:
     depends_on:
       # Ensures the database container is up before running tests
       neo4j:
-        condition: service_started # Recommended: wait until healthcheck passes
+        condition: service_healthy # Recommended: wait until healthcheck passes
                                   # If you don't define a healthcheck on neo4j, use 'service_started'
   python_app:
-    image: python:3.11-slim-buster
+    image: python:3.13-slim-buster
     container_name: python_with_polars
     volumes:
       - .:/app
@@ -53,6 +53,12 @@ services:
       - NEO4J_dbms_memory_pagecache_size=1G
       - NEO4J_dbms_memory_heap_initial__size=1G
       - NEO4J_dbms_memory_heap_max__size=1G
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:7687"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     volumes:
       - neo4j_data:/data
       - neo4j_logs:/logs

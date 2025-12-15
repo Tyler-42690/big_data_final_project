@@ -56,13 +56,13 @@ Raw Layer
 
 Clean Layer
 
-⦁	Handle missing values (NEEDS IMPLEMENTATION)
+⦁	Handle missing values (CHECK FOR)
 
-⦁	Normalize text (NEEDS IMPLEMENTATION)
+⦁	Normalize text (NOT APPLICABLE)
 
 ⦁	Standardize dates (NOT APPLICABLE)
 
-⦁	Remove duplicates (NEEDS IMPLEMENTATION)
+⦁	Remove duplicates (DONE AUTOMATICALLY VIA MERGE)
 
 ⦁	Validate schema using Pydantic (NEEDS IMPLEMENTATION)
 

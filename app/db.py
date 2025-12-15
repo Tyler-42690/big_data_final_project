@@ -23,7 +23,7 @@ def close_driver(driver:Driver) -> None:
     driver.close()
 
 
-def test_connection(driver:Driver) -> None:
+def check_connection(driver:Driver) -> None:
     try:
         with driver.session() as session:
 
