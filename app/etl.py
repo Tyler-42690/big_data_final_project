@@ -1,6 +1,6 @@
 # app/etl.py
 
-from typing import Iterable, Dict, Any
+from typing import Iterable, Dict, Any, cast
 import math
 import logging
 
@@ -8,7 +8,6 @@ import pyarrow.feather as feather
 from neo4j import Driver
 import polars as pl
 
-# Configure loading of CSV files
 logging.basicConfig(filename='output.log',
     filemode='a', #Append mode               
     level=logging.WARNING,         
@@ -45,7 +44,7 @@ def load_connections_arrow(
     else:
         total_use = total
 
-    df = pl.from_arrow(table)#.to_pandas()
+    df = cast(pl.DataFrame, pl.from_arrow(table))
     print("Polars dataframe shape:", df.shape)
 
     expected_cols = [
@@ -73,7 +72,7 @@ def load_connections_arrow(
     print(f"Inserting {total_use} rows into Neo4j in batches of {batch_size}...")
 
     # turn into list of dicts once, then chunk
-    rows = df.to_dicts()#to_dict(orient="records")
+    rows = df.to_dicts()
 
     for start in range(0, total_use, batch_size):
         end = min(start + batch_size, total_use)
