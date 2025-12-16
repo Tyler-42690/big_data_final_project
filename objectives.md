@@ -37,7 +37,7 @@ Use Python with:
 
 ⦁	Proper project structure using UV (DONE)
 
-⦁	Pydantic models for schema validation (NOT DONE, NEEDS IMPLEMENTATION)
+⦁	Pydantic models for schema validation (DONE)
 
 ⦁	Mypy for type-checking (DONE)
 

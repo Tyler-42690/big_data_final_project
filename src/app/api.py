@@ -15,6 +15,15 @@ from .graph_query import (
     get_k_hop_downstream,
 )
 
+from .schemas import (
+    CircuitResponse,
+    HealthResponse,
+    PartnerResponse,
+    PathResponse,
+    TwoHopDownstreamResponse,
+    TwoHopUpstreamResponse,
+)
+
 app = FastAPI(title="FlyWire Connectome API")
 
 # We create a single global driver for the app lifetime.
@@ -131,7 +140,7 @@ def _path_to_dict(p: Path) -> Dict[str, Any]:
     nodes = list(p.nodes)
     rels = list(p.relationships)
 
-    node_ids: List[int] = []
+    node_ids: List[Optional[int]] = []
     for n in nodes:
         rid = n.get("root_id")
         if rid is None:
@@ -156,13 +165,13 @@ def _path_to_dict(p: Path) -> Dict[str, Any]:
     return {"nodes": node_ids, "edges": edges}
 
 
-@app.get("/health")
+@app.get("/health", response_model=HealthResponse)
 def health_check() -> Dict[str, str]:
     """Simple health check."""
     return {"status": "ok"}
 
 
-@app.get("/neuron/{root_id}/presynaptic")
+@app.get("/neuron/{root_id}/presynaptic", response_model=List[PartnerResponse])
 def api_presynaptic(
     root_id: int,
     threshold: int = Query(0, ge=0),
@@ -195,7 +204,7 @@ def api_presynaptic(
     return partners
 
 
-@app.get("/neuron/{root_id}/postsynaptic")
+@app.get("/neuron/{root_id}/postsynaptic", response_model=List[PartnerResponse])
 def api_postsynaptic(
     root_id: int,
     threshold: int = Query(0, ge=0),
@@ -226,7 +235,7 @@ def api_postsynaptic(
     return partners
 
 
-@app.get("/neuron/{root_id}/two_hop_upstream")
+@app.get("/neuron/{root_id}/two_hop_upstream", response_model=List[TwoHopUpstreamResponse])
 def api_two_hop_upstream(
     root_id: int,
     threshold: int = Query(0, ge=0),
@@ -257,7 +266,7 @@ def api_two_hop_upstream(
     return chains
 
 
-@app.get("/neuron/{root_id}/two_hop_downstream")
+@app.get("/neuron/{root_id}/two_hop_downstream", response_model=List[TwoHopDownstreamResponse])
 def api_two_hop_downstream(
     root_id: int,
     threshold: int = Query(0, ge=0),
@@ -292,7 +301,7 @@ def api_two_hop_downstream(
 from .graph_query import get_k_hop_circuit
 
 
-@app.get("/neuron/{root_id}/circuit")
+@app.get("/neuron/{root_id}/circuit", response_model=CircuitResponse)
 def api_circuit(
     root_id: int,
     k: int = Query(3, ge=1, le=5),
@@ -325,7 +334,7 @@ def api_circuit(
     return circuit
 
 
-@app.get("/neuron/{root_id}/k_hop_upstream")
+@app.get("/neuron/{root_id}/k_hop_upstream", response_model=List[PathResponse])
 def api_k_hop_upstream(
     root_id: int,
     k: int = Query(2, ge=1, le=5),
@@ -357,7 +366,7 @@ def api_k_hop_upstream(
     return [_path_to_dict(p) for p in paths]
 
 
-@app.get("/neuron/{root_id}/k_hop_downstream")
+@app.get("/neuron/{root_id}/k_hop_downstream", response_model=List[PathResponse])
 def api_k_hop_downstream(
     root_id: int,
     k: int = Query(2, ge=1, le=5),
