@@ -1,4 +1,4 @@
-from app.db import get_driver, test_connection, close_driver
+from app.db import get_driver, check_connection, close_driver
 from app.etl import load_connections_arrow
 from app.graph_query import (
     get_postsynaptic_partners,
@@ -12,7 +12,7 @@ from app.simulate import simulate_silence, simulate_boost
 def main() -> None:
     driver = get_driver()
     print("Connected to Neo4j.")
-    test_connection(driver)
+    check_connection(driver)
 
     load_connections_arrow(
         driver,

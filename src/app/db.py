@@ -1,15 +1,17 @@
-'''
-Docstring for src.app.db
-'''
+import logging
+import os
+
+from neo4j import Driver, GraphDatabase
 import os
 import logging
 from neo4j import Driver, GraphDatabase
 
 
-logging.basicConfig(filename='output.log',
-    filemode='a', #Append mode               
-    level=logging.WARNING,         
-    format='%(asctime)s - %(levelname)s - %(message)s'
+logging.basicConfig(
+    filename="output.log",
+    filemode="a",  # Append mode
+    level=logging.WARNING,
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
 def get_driver() -> Driver:

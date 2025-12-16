@@ -1,5 +1,3 @@
-# app/etl.py
-
 from typing import Iterable, Dict, Any, cast
 import math
 import logging
@@ -8,11 +6,63 @@ import pyarrow.feather as feather
 from neo4j import Driver
 import polars as pl
 
-logging.basicConfig(filename='output.log',
-    filemode='a', #Append mode               
-    level=logging.WARNING,         
-    format='%(asctime)s - %(levelname)s - %(message)s'
+logging.basicConfig(
+    filename="output.log",
+    filemode="a",  # Append mode
+    level=logging.WARNING,
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
+
+
+NEURO_COLS = [
+    "gaba_avg",
+    "ach_avg",
+    "glut_avg",
+    "oct_avg",
+    "ser_avg",
+    "da_avg",
+]
+
+NEURO_LABELS: dict[str, str] = {
+    "gaba_avg": "GABA",
+    "ach_avg": "Acetylcholine",
+    "glut_avg": "Glutamate",
+    "oct_avg": "Octopamine",
+    "ser_avg": "Serotonin",
+    "da_avg": "Dopamine",
+}
+
+
+def _add_dominant_columns(df: pl.DataFrame) -> pl.DataFrame:
+    """Add dominant neurotransmitter columns.
+
+    - dominant_score: max of neurotransmitter probability columns
+    - dominant_nt: comma-separated neurotransmitter name(s) at the max (ties allowed)
+    """
+
+    missing = [c for c in NEURO_COLS if c not in df.columns]
+    if missing:
+        raise ValueError(f"Missing columns for dominant calculation: {missing}")
+
+    df = df.with_columns(pl.max_horizontal([pl.col(c) for c in NEURO_COLS]).alias("dominant_score"))
+
+    dominant_nt_expr = (
+        pl.concat_list(
+            [
+                pl.when(pl.col(c) == pl.col("dominant_score"))
+                .then(pl.lit(NEURO_LABELS.get(c, c)))
+                .otherwise(None)
+                for c in NEURO_COLS
+            ]
+        )
+        .list.drop_nulls()
+        .list.join(",")
+        .fill_null("")
+        .alias("dominant_nt")
+    )
+
+    return df.with_columns(dominant_nt_expr)
+
 
 def load_connections_arrow(
     driver: Driver,
@@ -47,6 +97,10 @@ def load_connections_arrow(
     df = cast(pl.DataFrame, pl.from_arrow(table))
     print("Polars dataframe shape:", df.shape)
 
+    # Compute dominant neurotransmitter columns in-memory before converting to dicts
+    # so we can store them as relationship properties in Neo4j.
+    df = _add_dominant_columns(df)
+
     expected_cols = [
         "pre_pt_root_id",
         "post_pt_root_id",
@@ -58,6 +112,8 @@ def load_connections_arrow(
         "oct_avg",
         "ser_avg",
         "da_avg",
+        "dominant_score",
+        "dominant_nt",
     ]
     missing = [c for c in expected_cols if c not in df.columns]
     if missing:
@@ -106,7 +162,9 @@ def _insert_batch(driver: Driver, rows: Iterable[Dict[str, Any]]) -> None:
         c.glut_avg = row.glut_avg,
         c.oct_avg  = row.oct_avg,
         c.ser_avg  = row.ser_avg,
-        c.da_avg   = row.da_avg
+        c.da_avg   = row.da_avg,
+        c.dominant_score = row.dominant_score,
+        c.dominant_nt = row.dominant_nt
     """
 
     cleaned_rows = []
