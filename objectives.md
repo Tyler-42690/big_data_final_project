@@ -64,13 +64,13 @@ Clean Layer
 
 ⦁	Remove duplicates (DONE AUTOMATICALLY VIA MERGE)
 
-⦁	Validate schema using Pydantic (NEEDS IMPLEMENTATION)
+⦁	Validate schema using Pydantic (DONE)
 
 ⦁	Show this transformed data back in the DB (NEEDS IMPLEMENTATION, MINOR)
 
-⦁	Aggregated Layer (NEEDS IMPLEMENTATION)
+⦁	Aggregated Layer (DONE)
 
-⦁	Build summary/aggregated datasets (Gold) (NEEDS IMPLEMENTATION).
+⦁	Build summary/aggregated datasets (Gold) (DONE, can be accessed quickly via Parquet).
 
 ⦁	Push them back into the Big Data system (NEEDS IMPLEMENTATION).
 
@@ -79,7 +79,7 @@ Clean Layer
 Visualizations (3 Total)
 Use Streamlit or Matplotlib or Tableau or Power BI.
 
-⦁	If using Tableau/Power BI, the data must come directly from your Big Data system (not flat files) (NEEDS IMPLEMENTATION).
+⦁	If using Tableau/Power BI, the data must come directly from your Big Data system (not flat files) (Matplotlib, DONE).
 
 ⦁	Your dashboard should use the aggregated data (NEEDS IMPLEMENTATION).
 
