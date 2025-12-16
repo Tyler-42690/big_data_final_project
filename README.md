@@ -31,27 +31,25 @@ imports from the project root and improves packaging correctness.
 
 Once downloaded, set up a directory called data\raw relative to this README file. Once completed, the directory structure should look like:
 
+```bash
 project-root/
-├── src/
+├── src/                    # Source-root layout (Python package lives here)
 │   └── app/
-│       ├── __init__.py
-│       ├── db.py
-│       ├── etl.py
-│       ├── models.py
-│       └── main.py
-├── tests/
-│   ├── test_db.py
-│   └── test_etl.py
-├── data/
+│       ├── __init__.py     # Marks app as a Python package
+│       ├── db.py           # Neo4j connection and query utilities
+│       ├── etl.py          # Feather → Neo4j ETL pipeline
+│       ├── models.py       # Pydantic data models
+│       └── main.py         # Application entry point
+│
+├── data/                   # Local datasets
 │   └── raw/
 │       └── proofread_connections_783.feather
-├── docker-compose.yaml
-├── Dockerfile
-├── pyproject.toml
-├── uv.lock
-├── test.py
-└── README.md
-
+├── docker-compose.yaml     # Multi-service setup (app, Neo4j, tests, mypy)
+├── pyproject.toml          # Project metadata and dependencies
+├── uv.lock                 # Locked dependency graph (uv)
+├── test.py                 # Unit and integration tests (pytest)
+└── README.md               # Project documentation
+```
 🔹 Step 2: Using docker-compose.yaml
 
 Install Docker Desktop support from the VS Code Extensions Marketplace.
