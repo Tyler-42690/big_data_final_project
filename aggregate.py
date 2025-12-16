@@ -11,7 +11,7 @@ so the project can keep `src/` as the single package source.
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Optional, cast
 import os
 import argparse
 import logging
@@ -122,8 +122,8 @@ def write_partitioned_parquet_by_neuropil(
                     batch = batch.slice(0, remaining)
 
             table = pa.Table.from_batches([batch])
-            df = pl.from_arrow(table)
-
+            
+            df = cast(pl.DataFrame, pl.from_arrow(table))
             df = _add_dominant_columns(df)
             if drop_prob_cols:
                 df = df.drop(NEURO_COLS)
