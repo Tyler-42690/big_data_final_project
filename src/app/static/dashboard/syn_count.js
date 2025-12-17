@@ -126,12 +126,8 @@ function _renderTable(elId, rows, opts) {
     }, new Set())
   );
 
-  const isDark = String(document.documentElement?.dataset?.theme || "").toLowerCase() === "dark";
-  const rowLine = isDark ? "#3D3D3D" : "#f0f0f0";
-  const headerLine = isDark ? "#3D3D3D" : "#ddd";
-
-  const headerStyle = `text-align:left;padding:6px 10px;border-bottom:1px solid ${headerLine};white-space:nowrap`;
-  const cellStyle = `padding:6px 10px;border-bottom:1px solid ${rowLine};white-space:nowrap`;
+  const headerStyle = "text-align:left;padding:6px 10px;white-space:nowrap";
+  const cellStyle = "padding:6px 10px;white-space:nowrap";
 
   const html = [
     `<div style="opacity:0.75;margin-bottom:6px">` +
@@ -426,8 +422,8 @@ async function fetchAndRenderPairs(threshold) {
     hintEl.textContent = `Found ${rows.length} pairs (${filterText}).`;
   }
 
-  const headerStyle = "text-align:left;padding:6px 10px;border-bottom:1px solid #ddd;white-space:nowrap";
-  const cellStyle = "padding:6px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap";
+  const headerStyle = "text-align:left;padding:6px 10px;white-space:nowrap";
+  const cellStyle = "padding:6px 10px;white-space:nowrap";
 
   const html = [
     `<table style="border-collapse:collapse;width:100%">`,

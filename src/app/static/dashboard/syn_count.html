@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>synapse count dashboard</title>
+    <title>FlyWire Whole-brain Connectome Dashboard</title>
     <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
     <style>
       :root {
@@ -236,11 +236,23 @@
       #nsRun {
         font-weight: 700;
       }
+
+      /* Dataset citation link should match surrounding text color */
+      .datasetCite a {
+        color: inherit;
+      }
     </style>
   </head>
   <body>
     <div class="stickyHeader" id="overviewTop">
-      <h2 style="margin: 0 0 10px 0">Dataset dashboard</h2>
+      <h2 style="margin: 0 0 10px 0">FlyWire Whole-brain Connectome Dashboard</h2>
+
+      <div class="datasetCite" style="margin: 0; opacity: 0.85">
+        Dataset source:
+        <a href="https://doi.org/10.5281/zenodo.10676865" target="_blank" rel="noopener noreferrer">10.5281/zenodo.10676865</a>
+      </div>
+
+      <div style="height: 18px"></div>
 
       <div class="row" style="margin-bottom: 10px">
         <button id="btnOverview" class="card btn" style="cursor:pointer;padding:6px 10px">

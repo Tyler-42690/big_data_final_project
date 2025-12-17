@@ -50,6 +50,8 @@ _PAIRS_PARQUET_ROOT = os.getenv(
     "data/aggregates/connections_with_dominant_nt_by_neuropil",
 )
 
+_PAIRS_SOURCE = os.getenv("FLYWIRE_PAIRS_SOURCE", "auto").strip().lower()
+
 
 class NeurotransmitterChoice(str, Enum):
     gaba = "GABA"
@@ -213,11 +215,13 @@ def dataset_pairs(
         neuropil_choice,
     )
 
-    # Prefer reading from the Parquet dataset (partitioned by neuropil) so the dashboard
-    # pairs list matches the dataset summary even if Neo4j contains only a subset.
-    if resolved_neuropil:
+    # Data source selection:
+    # - neo4j: always query Neo4j
+    # - parquet: parquet only (when neuropil is selected)
+    # - auto (default): parquet-first (when neuropil is selected), else Neo4j
+    if _PAIRS_SOURCE not in {"neo4j", "db"} and resolved_neuropil:
         partition_dir = os.path.join(_PAIRS_PARQUET_ROOT, f"neuropil={resolved_neuropil}")
-        if os.path.isdir(partition_dir):
+        if _PAIRS_SOURCE in {"parquet", "file"} or os.path.isdir(partition_dir):
             out: List[Dict[str, Any]] = []
             nt_filter = resolved_neurotransmitter.lower() if resolved_neurotransmitter else None
 
