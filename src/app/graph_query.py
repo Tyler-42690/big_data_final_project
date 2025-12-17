@@ -220,11 +220,28 @@ def get_k_hop_downstream(
             )
     RETURN p
     """
+    k_int = int(k)
+    if k_int < 1:
+        raise ValueError("k must be >= 1")
+
+    # NOTE: Neo4j does not allow parameterized variable-length patterns like *1..$k.
+    # We embed the validated integer directly.
+    cypher = f"""
+    MATCH p = (start:Neuron {{root_id: $root_id}})-[r:CONNECTS_TO*1..{k_int}]->(other:Neuron)
+    WHERE ALL(rel IN r WHERE rel.syn_count >= $threshold)
+            AND (
+                $neuropil IS NULL OR ALL(rel IN r WHERE toLower(coalesce(rel.neuropil, '')) = toLower($neuropil))
+            )
+            AND (
+                $neurotransmitter IS NULL
+                OR ALL(rel IN r WHERE toLower(coalesce(rel.dominant_nt, '')) CONTAINS toLower($neurotransmitter))
+            )
+    RETURN p
+    """
     with driver.session() as session:
         result = session.run(
             cypher,
             root_id=root_id,
-            k=k,
             threshold=threshold,
             neurotransmitter=neurotransmitter,
             neuropil=neuropil,
@@ -258,11 +275,28 @@ def get_k_hop_upstream(
             )
     RETURN p
     """
+    k_int = int(k)
+    if k_int < 1:
+        raise ValueError("k must be >= 1")
+
+    # NOTE: Neo4j does not allow parameterized variable-length patterns like *1..$k.
+    # We embed the validated integer directly.
+    cypher = f"""
+    MATCH p = (other:Neuron)-[r:CONNECTS_TO*1..{k_int}]->(start:Neuron {{root_id: $root_id}})
+    WHERE ALL(rel IN r WHERE rel.syn_count >= $threshold)
+            AND (
+                $neuropil IS NULL OR ALL(rel IN r WHERE toLower(coalesce(rel.neuropil, '')) = toLower($neuropil))
+            )
+            AND (
+                $neurotransmitter IS NULL
+                OR ALL(rel IN r WHERE toLower(coalesce(rel.dominant_nt, '')) CONTAINS toLower($neurotransmitter))
+            )
+    RETURN p
+    """
     with driver.session() as session:
         result = session.run(
             cypher,
             root_id=root_id,
-            k=k,
             threshold=threshold,
             neurotransmitter=neurotransmitter,
             neuropil=neuropil,

@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>synapse count dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+    <style>
+      :root {
+        --dash-bg: #ECE8E4;
+        --section-bg: #ECE8E4;
+        --dash-text: #505050;
+        --card-border: #ddd;
+        --field-border: #505050;
+        --slider-fill: #4E5F76;
+        --slider-rest: #d1d5db;
+        --control-bg: #F3F1EE;
+      }
+      html[data-theme="dark"] {
+        --dash-bg: #303030;
+        --section-bg: #303030;
+        --dash-text: #D8D1CA;
+        --card-border: #505050;
+        --field-border: #505050;
+        --slider-fill: #4E5F76;
+        /* Matches the dark-mode switch track appearance (previously rgba(255,255,255,0.12) over #303030 ≈ #494949) */
+        --control-bg: #494949;
+        --slider-rest: var(--control-bg);
+      }
+
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        margin: 16px;
+        background: var(--dash-bg);
+        color: var(--dash-text);
+      }
+      .stickyHeader {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: var(--dash-bg);
+        padding: 12px 0;
+        border-bottom: none;
+      }
+      .row {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .card {
+        border: none;
+        border-radius: 8px;
+        padding: 12px;
+        background: #fff;
+      }
+      .card.section {
+        background: var(--section-bg);
+      }
+      .card.btn {
+        background: var(--control-bg);
+        color: var(--dash-text);
+      }
+      .searchField {
+        background: var(--control-bg);
+        color: var(--dash-text);
+        border: none;
+      }
+      .searchField::placeholder {
+        color: var(--dash-text);
+        opacity: 0.75;
+      }
+      .searchField:focus {
+        outline: none;
+      }
+      .themeToggle {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: none;
+        background: var(--dash-bg);
+        color: var(--dash-text);
+        user-select: none;
+      }
+
+      .switchInput {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .switchTrack {
+        position: relative;
+        width: 38px;
+        height: 20px;
+        border-radius: 999px;
+        border: none;
+        background: rgba(0, 0, 0, 0.06);
+        display: inline-block;
+        flex: 0 0 auto;
+      }
+      html[data-theme="dark"] .switchTrack {
+        background: var(--control-bg);
+      }
+      .switchThumb {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        background: var(--dash-bg);
+        border: none;
+        transition: transform 160ms ease;
+      }
+      .switchInput:checked + .switchTrack .switchThumb {
+        transform: translateX(18px);
+      }
+      .switchInput:focus + .switchTrack {
+        outline: none;
+      }
+      #histChart,
+      #neuropilChart {
+        width: 100%;
+        max-width: 1100px;
+        height: 520px;
+      }
+      input[type="range"] {
+        width: 320px;
+      }
+
+      /* Range slider theming */
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        background: transparent;
+        height: 28px;
+      }
+      input[type="range"]:focus {
+        outline: none;
+      }
+      input[type="range"]::-webkit-slider-runnable-track {
+        height: 8px;
+        border-radius: 999px;
+        border: none;
+        background: linear-gradient(
+          to right,
+          var(--slider-fill) 0%,
+          var(--slider-fill) var(--slider-pct, 0%),
+          var(--slider-rest) var(--slider-pct, 0%),
+          var(--slider-rest) 100%
+        );
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: var(--slider-fill);
+        border: none;
+        margin-top: -6px;
+      }
+      input[type="range"]::-moz-range-track {
+        height: 8px;
+        border-radius: 999px;
+        border: none;
+        background: var(--slider-rest);
+      }
+      input[type="range"]::-moz-range-progress {
+        height: 8px;
+        border-radius: 999px;
+        background: var(--slider-fill);
+      }
+      input[type="range"]::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: var(--slider-fill);
+        border: none;
+      }
+      code {
+        background: transparent;
+        padding: 0;
+        border-radius: 0;
+      }
+
+      /* Light-mode overrides requested */
+      html[data-theme="light"] #btnOverview,
+      html[data-theme="light"] #btnNeuronSearch {
+        background: #E5E0DB;
+      }
+      html[data-theme="light"] #neuronSearchPanel + .card.section {
+        background: #E5E0DB;
+      }
+
+      html[data-theme="dark"] #neuronSearchPanel + .card.section {
+        background: #3D3D3D;
+      }
+
+      html[data-theme="light"] .nsResultCard {
+        background: #E5E0DB;
+      }
+
+      html[data-theme="dark"] .nsResultCard {
+        background: #3D3D3D;
+      }
+
+      /* Dark-mode: darker input fill + Run button */
+      html[data-theme="dark"] .searchField {
+        background: #494949;
+      }
+      html[data-theme="dark"] #nsRun {
+        background: #494949;
+      }
+
+      /* Light-mode: search field fill */
+      html[data-theme="light"] .searchField {
+        background: #EBE6E2;
+      }
+
+      /* Light-mode: Run button background */
+      html[data-theme="light"] #nsRun {
+        background: #D8D1CA;
+      }
+
+      /* Make the Run button label bold (both themes) */
+      #nsRun {
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stickyHeader" id="overviewTop">
+      <h2 style="margin: 0 0 10px 0">Dataset dashboard</h2>
+
+      <div class="row" style="margin-bottom: 10px">
+        <button id="btnOverview" class="card btn" style="cursor:pointer;padding:6px 10px">
+          <b>overview</b>
+        </button>
+        <button id="btnNeuronSearch" class="card btn" style="cursor:pointer;padding:6px 10px">
+          <b>search by neuron</b>
+        </button>
+
+        <label class="themeToggle" title="Toggle light/dark">
+          <span style="font-size:12px">light</span>
+          <input id="themeSwitch" class="switchInput" type="checkbox" />
+          <span class="switchTrack" aria-hidden="true"><span class="switchThumb"></span></span>
+          <span style="font-size:12px">dark</span>
+        </label>
+      </div>
+
+      <div class="card section" style="max-width: 1100px">
+        <div class="row">
+          <div><b>Total neurons</b>: <span id="totalNeurons">-</span></div>
+          <div><b>Presynaptic neurons</b>: <span id="preNeurons">-</span></div>
+          <div><b>Postsynaptic neurons</b>: <span id="postNeurons">-</span></div>
+          <div><b>Neuron-neuron pairs</b>: <span id="totalPairs">-</span></div>
+          <div><b>Neuropils</b>: <span id="neuropilCount">-</span></div>
+        </div>
+        <div style="margin-top: 8px">
+          <b>Neurotransmitters</b>:
+          <span id="neurotransmitters" style="display: inline-flex; gap: 8px; flex-wrap: wrap">-</span>
+        </div>
+      </div>
+
+      <div class="row card section" style="max-width: 1100px; margin-top: 10px">
+        <div>
+          <div><b>Threshold</b>: <span id="thrLabel">1</span></div>
+          <input id="thr" type="range" min="1" max="1" value="1" step="1" />
+        </div>
+        <div>
+          <div><b>Pairs with synapse count ≥ threshold</b>: <span id="pairsLabel">-</span></div>
+          <div style="opacity: 0.8">
+            Data source: <code>/dataset/summary</code> (precomputed)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 18px">synapse count distribution (filtered)</h3>
+    <div id="histChart"></div>
+
+    <h3 style="margin-top: 18px">Neuropils (circle size by pair count)</h3>
+    <div id="neuropilChart"></div>
+
+    <div style="max-width: 1100px; opacity: 0.8; margin-top: 24px">
+      Each circle is a neuropil. Circle diameter scales with <code>sqrt(pairs)</code>, where <code>pairs</code> is the number of neuron-neuron pairs in that neuropil with <code>synapse count ≥ threshold</code> (so circle area is proportional to <code>pairs</code>).
+    </div>
+
+    <h3 style="margin-top: 18px">Neuron-neuron pairs (filtered)</h3>
+    <div class="card section" style="max-width: 1100px">
+      <div style="opacity: 0.85; margin-bottom: 8px" id="pairsHint">
+        Click a neuropil circle to filter the histogram and list pairs.
+      </div>
+      <div id="pairsTable" style="overflow:auto"></div>
+    </div>
+
+    <h3 id="neuronSearchPanel" style="margin-top: 28px">Search by neuron</h3>
+    <div class="card section" style="max-width: 1100px">
+      <div class="row" style="align-items:flex-end">
+        <div>
+          <div><b>root id</b></div>
+          <input id="nsRootId" class="searchField" type="text" placeholder="e.g. 720575940624547622" style="width: 260px" />
+        </div>
+        <div>
+          <div><b>synapse count threshold</b></div>
+          <input id="nsThreshold" class="searchField" type="number" min="0" value="0" style="width: 120px" />
+        </div>
+        <div>
+          <div><b>neurotransmitter</b></div>
+          <select id="nsNt" class="searchField" style="width: 200px">
+            <option value="">(all)</option>
+          </select>
+        </div>
+        <div>
+          <div><b>neuropil</b></div>
+          <select id="nsNeuropil" class="searchField" style="width: 200px">
+            <option value="">(all)</option>
+          </select>
+        </div>
+        <div>
+          <div><b>k</b> (for k-hop / circuit)</div>
+          <input id="nsK" class="searchField" type="number" min="1" max="5" value="3" style="width: 80px" />
+        </div>
+        <div>
+          <button id="nsRun" class="card btn" style="cursor:pointer;padding:8px 12px;border-radius:8px">
+            Run
+          </button>
+        </div>
+      </div>
+
+      <div id="nsStatus" style="margin-top: 10px; opacity: 0.85"></div>
+
+      <div style="margin-top: 12px">
+        <div class="card section nsResultCard" style="margin-top: 10px">
+          <div><b>Presynaptic partners</b> <span id="nsPresynCount" style="opacity:0.7"></span></div>
+          <div id="nsPresyn"></div>
+        </div>
+
+        <div class="card section nsResultCard" style="margin-top: 10px">
+          <div><b>Postsynaptic partners</b> <span id="nsPostsynCount" style="opacity:0.7"></span></div>
+          <div id="nsPostsyn"></div>
+        </div>
+
+        <div class="card section nsResultCard" style="margin-top: 10px">
+          <div><b>Two-hop upstream</b> <span id="ns2UpCount" style="opacity:0.7"></span></div>
+          <div id="ns2Up"></div>
+        </div>
+
+        <div class="card section nsResultCard" style="margin-top: 10px">
+          <div><b>Two-hop downstream</b> <span id="ns2DownCount" style="opacity:0.7"></span></div>
+          <div id="ns2Down"></div>
+        </div>
+
+        <div class="card section nsResultCard" style="margin-top: 10px">
+          <div><b>k-hop upstream paths</b> <span id="nsKUpCount" style="opacity:0.7"></span></div>
+          <div id="nsKUp"></div>
+        </div>
+
+        <div class="card section nsResultCard" style="margin-top: 10px">
+          <div><b>k-hop downstream paths</b> <span id="nsKDownCount" style="opacity:0.7"></span></div>
+          <div id="nsKDown"></div>
+        </div>
+
+        <div class="card section nsResultCard" style="margin-top: 10px">
+          <div><b>k-hop circuit</b> <span id="nsCircuitCount" style="opacity:0.7"></span></div>
+          <div id="nsCircuit"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/dashboard/syn_count.js"></script>
+  </body>
+</html>

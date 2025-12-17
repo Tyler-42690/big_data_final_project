@@ -1,9 +1,15 @@
 # app/api.py
+from pathlib import Path
+import os
+
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.staticfiles import StaticFiles
 from typing import List, Dict, Any, Optional
 from enum import Enum
 
-from neo4j.graph import Path
+import pyarrow.dataset as ds
+
+from neo4j.graph import Path as Neo4jPath
 
 from .db import get_driver
 from .graph_query import (
@@ -17,6 +23,7 @@ from .graph_query import (
 
 from .schemas import (
     CircuitResponse,
+    DatasetPairResponse,
     HealthResponse,
     PartnerResponse,
     PathResponse,
@@ -24,10 +31,24 @@ from .schemas import (
     TwoHopUpstreamResponse,
 )
 
+from .dashboard import router as dashboard_router
+
 app = FastAPI(title="FlyWire Connectome API")
 
 # We create a single global driver for the app lifetime.
 driver = get_driver()
+
+
+_STATIC_DIR = Path(__file__).resolve().parent / "static"
+app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
+
+app.include_router(dashboard_router)
+
+
+_PAIRS_PARQUET_ROOT = os.getenv(
+    "FLYWIRE_PAIRS_PARQUET",
+    "data/aggregates/connections_with_dominant_nt_by_neuropil",
+)
 
 
 class NeurotransmitterChoice(str, Enum):
@@ -134,7 +155,7 @@ def _resolve_filters(
     return resolved_neurotransmitter, resolved_neuropil
 
 
-def _path_to_dict(p: Path) -> Dict[str, Any]:
+def _path_to_dict(p: Neo4jPath) -> Dict[str, Any]:
     """Convert a Neo4j Path to a JSON-serializable dict."""
 
     nodes = list(p.nodes)
@@ -169,6 +190,100 @@ def _path_to_dict(p: Path) -> Dict[str, Any]:
 def health_check() -> Dict[str, str]:
     """Simple health check."""
     return {"status": "ok"}
+
+
+@app.get("/dataset/pairs", response_model=List[DatasetPairResponse])
+def dataset_pairs(
+    threshold: int = Query(1, ge=0),
+    neurotransmitter: Optional[str] = Query(None),
+    neurotransmitter_choice: Optional[NeurotransmitterChoice] = Query(None),
+    neuropil: Optional[str] = Query(None),
+    neuropil_choice: Optional[NeuropilChoice] = Query(None),
+    limit: int = Query(200, ge=1, le=1000),
+) -> List[Dict[str, Any]]:
+    """Return neuron-neuron pairs matching the current dashboard filters.
+
+    Data source is Neo4j CONNECTS_TO relationships (must be loaded via ETL).
+    """
+
+    resolved_neurotransmitter, resolved_neuropil = _resolve_filters(
+        neurotransmitter,
+        neurotransmitter_choice,
+        neuropil,
+        neuropil_choice,
+    )
+
+    # Prefer reading from the Parquet dataset (partitioned by neuropil) so the dashboard
+    # pairs list matches the dataset summary even if Neo4j contains only a subset.
+    if resolved_neuropil:
+        partition_dir = os.path.join(_PAIRS_PARQUET_ROOT, f"neuropil={resolved_neuropil}")
+        if os.path.isdir(partition_dir):
+            out: List[Dict[str, Any]] = []
+            nt_filter = resolved_neurotransmitter.lower() if resolved_neurotransmitter else None
+
+            dataset = ds.dataset(partition_dir, format="parquet")
+            filt = ds.field("syn_count") >= threshold
+            columns = [
+                "pre_pt_root_id",
+                "post_pt_root_id",
+                "syn_count",
+                "dominant_nt",
+            ]
+            for batch in dataset.to_batches(columns=columns, filter=filt):
+                pre = batch.column(batch.schema.get_field_index("pre_pt_root_id")).to_pylist()
+                post = batch.column(batch.schema.get_field_index("post_pt_root_id")).to_pylist()
+                syn = batch.column(batch.schema.get_field_index("syn_count")).to_pylist()
+                dom = batch.column(batch.schema.get_field_index("dominant_nt")).to_pylist()
+
+                for pre_id, post_id, syn_count, dominant_nt in zip(pre, post, syn, dom, strict=True):
+                    if pre_id is None or post_id is None or syn_count is None:
+                        continue
+                    if nt_filter:
+                        s = (dominant_nt or "").lower()
+                        if nt_filter not in s:
+                            continue
+                    out.append(
+                        {
+                            "pre_id": int(pre_id),
+                            "post_id": int(post_id),
+                            "syn_count": int(syn_count),
+                            "dominant_nt": dominant_nt,
+                            "neuropil": resolved_neuropil,
+                        }
+                    )
+                    if len(out) >= limit:
+                        return out
+            return out
+
+    cypher = """
+    MATCH (pre:Neuron)-[r:CONNECTS_TO]->(post:Neuron)
+    WHERE r.syn_count >= $threshold
+        AND (
+            $neuropil IS NULL OR toLower(coalesce(r.neuropil, '')) = toLower($neuropil)
+        )
+        AND (
+            $neurotransmitter IS NULL
+            OR toLower(coalesce(r.dominant_nt, '')) CONTAINS toLower($neurotransmitter)
+        )
+    RETURN
+        pre.root_id AS pre_id,
+        post.root_id AS post_id,
+        r.syn_count AS syn_count,
+        r.dominant_nt AS dominant_nt,
+        r.neuropil AS neuropil
+    ORDER BY syn_count DESC
+    LIMIT $limit
+    """
+
+    with driver.session() as session:
+        result = session.run(
+            cypher,
+            threshold=threshold,
+            neuropil=resolved_neuropil,
+            neurotransmitter=resolved_neurotransmitter,
+            limit=limit,
+        )
+        return [record.data() for record in result]
 
 
 @app.get("/neuron/{root_id}/presynaptic", response_model=List[PartnerResponse])
