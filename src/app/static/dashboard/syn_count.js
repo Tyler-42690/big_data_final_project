@@ -30,6 +30,13 @@ function _themeTextColor() {
   return _cssVar("--dash-text", "#505050");
 }
 
+function _themeFontFamily() {
+  return _cssVar(
+    "--dash-font",
+    'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+  );
+}
+
 function _initThemeToggle() {
   const key = "synCountTheme";
   const saved = (localStorage.getItem(key) || "").toLowerCase();
@@ -583,6 +590,7 @@ function updateChart(threshold) {
 
   const DASH_BG = _themeBg();
   const DASH_TEXT = _themeTextColor();
+  const DASH_FONT = _themeFontFamily();
 
   const activeNt = selectedNt;
   const activeNeuropil = selectedNeuropil;
@@ -626,8 +634,8 @@ function updateChart(threshold) {
       margin: { t: 20, r: 20, b: 60, l: 60 },
       paper_bgcolor: DASH_BG,
       plot_bgcolor: DASH_BG,
-      font: { color: DASH_TEXT },
-      hoverlabel: { font: { color: DASH_TEXT }, bordercolor: "rgba(0,0,0,0)", borderwidth: 0 },
+      font: { color: DASH_TEXT, family: DASH_FONT },
+      hoverlabel: { font: { color: DASH_TEXT, family: DASH_FONT }, bordercolor: "rgba(0,0,0,0)", borderwidth: 0 },
       xaxis: {
         title: activeNt
           ? `synapse count (dominant: ${activeNt}; filtered to ≥ threshold)`
@@ -668,9 +676,14 @@ function updateChart(threshold) {
 
   const opacities = counts.map((c) => (c > 0 ? 0.95 : 0.2));
   const colors = activeNt
-    ? neuropils.map(() => _dominantNtColor(activeNt))
+    ? neuropils.map((np) => {
+        // Keep selected circle in the same (brighter) hover color.
+        if (activeNeuropil && np === activeNeuropil) return _dominantNtHoverColor(activeNt);
+        return _dominantNtColor(activeNt);
+      })
     : neuropils.map((np) => {
         const nt = _dominantNtForNeuropil(np, threshold);
+        if (activeNeuropil && np === activeNeuropil) return nt ? _dominantNtHoverColor(nt) : "#6b7280";
         return nt ? _dominantNtColor(nt) : "#6b7280";
       });
 
@@ -728,8 +741,8 @@ function updateChart(threshold) {
       margin: { t: 10, r: 10, b: 10, l: 10 },
       paper_bgcolor: DASH_BG,
       plot_bgcolor: DASH_BG,
-      font: { color: DASH_TEXT },
-      hoverlabel: { font: { color: DASH_TEXT }, bordercolor: "rgba(0,0,0,0)", borderwidth: 0 },
+      font: { color: DASH_TEXT, family: DASH_FONT },
+      hoverlabel: { font: { color: DASH_TEXT, family: DASH_FONT }, bordercolor: "rgba(0,0,0,0)", borderwidth: 0 },
       // Fix axis ranges so changes in marker size do NOT trigger autoscaling
       // (autoscaling causes apparent "jitter" of marker positions).
       xaxis: { visible: false, fixedrange: true, autorange: false, range: [-0.5, cols - 0.5] },

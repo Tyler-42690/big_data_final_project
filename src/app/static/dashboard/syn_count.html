@@ -10,6 +10,7 @@
         --dash-bg: #ECE8E4;
         --section-bg: #ECE8E4;
         --dash-text: #505050;
+        --dash-font: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         --card-border: #ddd;
         --field-border: #505050;
         --slider-fill: #4E5F76;
@@ -29,10 +30,18 @@
       }
 
       body {
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        font-family: var(--dash-font);
         margin: 16px;
         background: var(--dash-bg);
         color: var(--dash-text);
+      }
+
+      /* Ensure form controls and tables inherit the same UI font */
+      button, input, select, textarea {
+        font-family: var(--dash-font);
+      }
+      table, th, td {
+        font-family: var(--dash-font);
       }
       .stickyHeader {
         position: sticky;
@@ -191,6 +200,7 @@
         background: transparent;
         padding: 0;
         border-radius: 0;
+        font-family: inherit;
       }
 
       /* Light-mode overrides requested */
@@ -203,7 +213,7 @@
       }
 
       html[data-theme="dark"] #neuronSearchPanel + .card.section {
-        background: #3D3D3D;
+        background: #373737;
       }
 
       html[data-theme="light"] .nsResultCard {
@@ -211,7 +221,7 @@
       }
 
       html[data-theme="dark"] .nsResultCard {
-        background: #3D3D3D;
+        background: #373737;
       }
 
       /* Dark-mode: darker input fill + Run button */
