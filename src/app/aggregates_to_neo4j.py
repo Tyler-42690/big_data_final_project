@@ -1,3 +1,6 @@
+"""
+    Push aggregated dashboard summary JSON into Neo4j.
+"""
 from __future__ import annotations
 
 import argparse
@@ -35,7 +38,7 @@ def push_summary_json_to_neo4j(
     uniq = summary.get("unique") or {}
     syn = summary.get("syn_count") or {}
 
-    params = {
+    params: Dict[str, Any] = {
         "id": dataset_id,
         "summary_json": summary_json_str,
         "input": summary.get("input"),

@@ -1,12 +1,15 @@
-from app.db import get_driver, check_connection, close_driver
-from app.etl import load_connections_arrow
-from app.graph_query import (
+"""
+    Main script to run the ETL process and visualize graph queries and simulations.
+"""
+from src.app.db import get_driver, check_connection, close_driver
+from src.app.etl import load_connections_arrow
+from src.app.graph_query import (
     get_postsynaptic_partners,
     get_presynaptic_partners,
     get_two_hop_upstream,
     get_two_hop_downstream,
 )
-from app.simulate import simulate_silence, simulate_boost
+from src.app.simulate import simulate_silence, simulate_boost
 
 
 def main() -> None:

@@ -15,10 +15,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, cast
 
 import pyarrow as pa
-import pyarrow.compute as pc
 import pyarrow.dataset as ds
 import polars as pl
 
@@ -107,28 +106,53 @@ def main() -> None:
         total_rows += batch.num_rows
 
         # Unique sets
-        pre_unique = pc.unique(batch.column(batch.schema.get_field_index("pre_pt_root_id")))
-        post_unique = pc.unique(batch.column(batch.schema.get_field_index("post_pt_root_id")))
-        neuropil_unique = pc.unique(batch.column(batch.schema.get_field_index("neuropil")))
+        # Convert batch once
+        t_full = pa.Table.from_batches([batch]).select(
+            ["pre_pt_root_id", "post_pt_root_id", "neuropil", "syn_count"]
+        )
+        df_full = cast(pl.DataFrame, pl.from_arrow(t_full))
 
-        pre_ids.update([int(x) for x in pre_unique.to_pylist() if x is not None])
-        post_ids.update([int(x) for x in post_unique.to_pylist() if x is not None])
-        neuropils.update([str(n) for n in neuropil_unique.to_pylist() if n is not None])
+        # Unique IDs
+        pre_ids.update(
+            df_full.select("pre_pt_root_id")
+            .drop_nulls()
+            .unique()
+            .to_series()
+            .to_list()
+        )
+
+        post_ids.update(
+            df_full.select("post_pt_root_id")
+            .drop_nulls()
+            .unique()
+            .to_series()
+            .to_list()
+        )
+
+        neuropils.update(
+            df_full.select("neuropil")
+            .drop_nulls()
+            .unique()
+            .to_series()
+            .to_list()
+        )
 
         # Global syn_count histogram
-        vc = pc.value_counts(batch.column(batch.schema.get_field_index("syn_count")))
-        values = vc.field("values").to_pylist()
-        counts = vc.field("counts").to_pylist()
-        for v, c in zip(values, counts, strict=True):
-            if v is None:
-                continue
-            v_int = int(v)
-            syn_hist[v_int] = syn_hist.get(v_int, 0) + int(c)
+        g_syn = (
+            df_full.select("syn_count")
+            .drop_nulls()
+            .group_by("syn_count")
+            .len()
+        )
+
+        for syn_count, count in g_syn.iter_rows():
+            syn = int(syn_count)
+            syn_hist[syn] = syn_hist.get(syn, 0) + int(count)
 
         # Batch -> Polars for grouped counts
         t = pa.Table.from_batches([batch]).select(["neuropil", "syn_count", "dominant_nt"])
-        df = pl.from_arrow(t).drop_nulls(["neuropil", "syn_count"])
-
+        df = cast(pl.DataFrame, pl.from_arrow(t))
+        df = df.drop_nulls(["neuropil", "syn_count"])
         # Per-neuropil syn_count hist
         g = (
             df.select(["neuropil", "syn_count"])  # type: ignore[attr-defined]
@@ -199,17 +223,16 @@ def main() -> None:
         if neuropil not in by_neuropil:
             by_neuropil[neuropil] = {"total_pairs": 0, "histogram": []}
 
-        by_neurotransmitter: Dict[str, Dict[str, Any]] = {}
+        by_neurotransmitter_neuropil: Dict[str, Dict[str, Any]] = {}
         for nt_name, h in by_nt.items():
             h_items = [
                 {"syn_count": int(v), "count": int(c)} for v, c in sorted(h.items(), key=lambda x: x[0])
             ]
-            by_neurotransmitter[nt_name] = {
+            by_neurotransmitter_neuropil[nt_name] = {
                 "total_pairs": int(sum(h.values())),
                 "histogram": h_items,
             }
-        by_neuropil[neuropil]["by_neurotransmitter"] = by_neurotransmitter
-
+        by_neuropil[neuropil]["by_neurotransmitter"] = by_neurotransmitter_neuropil
     by_neurotransmitter: Dict[str, Dict[str, Any]] = {}
     for nt_name, h in sorted(global_nt_syn_hist.items(), key=lambda x: x[0]):
         h_items = [

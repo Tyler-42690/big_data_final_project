@@ -1,5 +1,5 @@
 import argparse
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, cast
 import json
 import os
 
@@ -124,29 +124,54 @@ def main() -> None:
 			total_rows += batch.num_rows
 
 			# Unique counts (exact, streaming): update sets using per-batch uniques
-			pre_unique = pc.unique(batch.column(batch.schema.get_field_index("pre_pt_root_id")))
-			post_unique = pc.unique(batch.column(batch.schema.get_field_index("post_pt_root_id")))
-			neuropil_unique = pc.unique(batch.column(batch.schema.get_field_index("neuropil")))
+			t_full = pa.Table.from_batches([batch]).select(
+				["pre_pt_root_id", "post_pt_root_id", "neuropil", "syn_count"]
+			)
+			df_full = cast(pl.DataFrame, pl.from_arrow(t_full))
 
-			pre_ids.update(pre_unique.to_pylist())
-			post_ids.update(post_unique.to_pylist())
-			neuropils.update([n for n in neuropil_unique.to_pylist() if n is not None])
+			# ---- Unique IDs (exact, streaming-safe) ----
+			pre_ids.update(
+				df_full.select("pre_pt_root_id")
+				.drop_nulls()
+				.unique()
+				.to_series()
+				.to_list()
+			)
 
-			# syn_count histogram via value_counts
-			vc = pc.value_counts(batch.column(batch.schema.get_field_index("syn_count")))
-			values = vc.field("values").to_pylist()
-			counts = vc.field("counts").to_pylist()
-			for v, c in zip(values, counts, strict=True):
-				if v is None:
-					continue
-				v_int = int(v)
-				syn_hist[v_int] = syn_hist.get(v_int, 0) + int(c)
+			post_ids.update(
+				df_full.select("post_pt_root_id")
+				.drop_nulls()
+				.unique()
+				.to_series()
+				.to_list()
+			)
+
+			neuropils.update(
+				df_full.select("neuropil")
+				.drop_nulls()
+				.unique()
+				.to_series()
+				.to_list()
+			)
+
+			# ---- syn_count histogram ----
+			g_syn = (
+				df_full.select("syn_count")
+				.drop_nulls()
+				.group_by("syn_count")
+				.len()
+			)
+
+			for syn_count, count in g_syn.iter_rows():
+				syn = int(syn_count)
+				syn_hist[syn] = syn_hist.get(syn, 0) + int(count)
 
 			# Per-neuropil syn_count histogram (for circle dashboard).
 			if neuropil_syn_hist is not None:
 				# Group counts by (neuropil, syn_count) within this record batch.
 				t = pa.Table.from_batches([batch]).select(["neuropil", "syn_count"])
-				df = pl.from_arrow(t).drop_nulls(["neuropil", "syn_count"])
+				df = cast(pl.DataFrame, pl.from_arrow(t))
+				df = df.drop_nulls(["neuropil", "syn_count"])
 				g = (
 					df.group_by(["neuropil", "syn_count"])  # type: ignore[attr-defined]
 					.len()
@@ -163,7 +188,7 @@ def main() -> None:
 			if neuropil_nt_syn_hist is not None:
 				select_cols = ["neuropil", "syn_count"] + [col for _, col in _NT_COLS]
 				t2 = pa.Table.from_batches([batch]).select(select_cols)
-				df2 = pl.from_arrow(t2).drop_nulls(["neuropil", "syn_count"])
+				df2 = cast(pl.DataFrame, pl.from_arrow(t2)).drop_nulls(["neuropil", "syn_count"])
 
 				# Compute dominant neurotransmitter list (ties allowed) based on max across *_avg columns.
 				max_expr = pl.max_horizontal([pl.col(col) for _, col in _NT_COLS]).alias("_nt_max")
@@ -258,17 +283,17 @@ def main() -> None:
 					# If for some reason neuropil histogram is missing, still create the container.
 					by_neuropil[neuropil] = {"total_pairs": 0, "histogram": []}
 
-				by_neurotransmitter: Dict[str, Dict[str, object]] = {}
+				by_neurotransmitter_neuropil: Dict[str, Dict[str, object]] = {}
 				for nt_name, h in by_nt.items():
 					h_items = [
 						{"syn_count": int(v), "count": int(c)}
 						for v, c in sorted(h.items(), key=lambda x: x[0])
 					]
-					by_neurotransmitter[nt_name] = {
+					by_neurotransmitter_neuropil[nt_name] = {
 						"total_pairs": int(sum(h.values())),
 						"histogram": h_items,
 					}
-				by_neuropil[neuropil]["by_neurotransmitter"] = by_neurotransmitter
+				by_neuropil[neuropil]["by_neurotransmitter"] = by_neurotransmitter_neuropil
 
 		# Global by-neurotransmitter histograms (used for filtering the bar chart and circles).
 		by_neurotransmitter: Dict[str, Dict[str, object]] = {}
