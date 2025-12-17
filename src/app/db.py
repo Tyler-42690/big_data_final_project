@@ -2,10 +2,6 @@ import logging
 import os
 
 from neo4j import Driver, GraphDatabase
-import os
-import logging
-from neo4j import Driver, GraphDatabase
-
 
 logging.basicConfig(
     filename="output.log",
