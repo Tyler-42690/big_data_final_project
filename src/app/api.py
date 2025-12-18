@@ -1,12 +1,10 @@
 # app/api.py
 from pathlib import Path
 import os
-
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.staticfiles import StaticFiles
 from typing import List, Dict, Any, Optional
 from enum import Enum
-
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.staticfiles import StaticFiles
 import pyarrow.dataset as ds
 
 from neo4j.graph import Path as Neo4jPath
@@ -19,6 +17,7 @@ from .graph_query import (
     get_two_hop_downstream,
     get_k_hop_upstream,
     get_k_hop_downstream,
+    get_k_hop_circuit
 )
 
 from .schemas import (
@@ -414,10 +413,6 @@ def api_two_hop_downstream(
     if not chains:
         raise HTTPException(status_code=404, detail="No two-hop downstream chains found")
     return chains
-
-
-# 如果你已经有 get_k_hop_circuit，可以再加一个：
-from .graph_query import get_k_hop_circuit
 
 
 @app.get("/neuron/{root_id}/circuit", response_model=CircuitResponse)

@@ -423,7 +423,7 @@ http://127.0.0.1:8000/dashboard/syn_count
 
 ## Deliverable Statement + Verification Steps
 
-### Deliverable statement (what we built)
+### Deliverable statement
 
 This project produces an aggregated “gold” dashboard summary from the raw FlyWire dataset and **pushes that aggregated artifact back into the Big Data system (Neo4j)**. The FastAPI service can be configured to serve the dashboard summary directly **from Neo4j**, and the dashboard reads its aggregated charts/totals from the `/dataset/summary` API endpoint.
 
@@ -434,9 +434,9 @@ Concretely:
 - Big Data read path: the API serves `/dataset/summary` from Neo4j when `FLYWIRE_SUMMARY_SOURCE=neo4j`.
 - Dashboard provenance: the dashboard UI consumes `/dataset/summary`, so it is driven by aggregated data served from Neo4j.
 
-### Verification steps (copy/paste; screenshot-friendly)
+### Verification steps 
 
-The commands below demonstrate (1) the aggregate exists in Neo4j and (2) the dashboard summary endpoint is served from Neo4j.
+The commands below demonstrate whether (1) the aggregate exists in Neo4j and (2) the dashboard summary endpoint is served from Neo4j.
 
 #### 1) Confirm the aggregated summary exists in Neo4j
 
@@ -475,9 +475,9 @@ http://127.0.0.1:8000/dashboard/syn_count
 
 Expected: charts render and filters work; charts/totals are populated from `/dataset/summary`.
 
-#### (Optional) Strict “all dashboard data from Neo4j” mode
+#### Strict “all dashboard data from Neo4j” mode
 
-If your rubric requires that even the dashboard *pairs list* comes from the Big Data system, set:
+If the *pairs list* should be required to come from neo4j, set:
 
 - `FLYWIRE_PAIRS_SOURCE=neo4j`
 

@@ -251,7 +251,7 @@ def main() -> None:
 	else:
 		print("syn_count: no data")
 
-	# Optional: write an offline JSON summary for dashboards/API.
+	# Write an offline JSON summary for dashboards/API.
 	if args.out_json is not None:
 		out_path = args.out_json
 		out_dir = os.path.dirname(out_path)
