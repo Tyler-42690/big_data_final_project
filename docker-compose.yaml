@@ -1,31 +1,69 @@
 services:
-  python_app:
-    image: python:3.11
-    container_name: python_with_polars
+  mypy:
+    image: python:3.13-slim-trixie
+    container_name: mypy_checker
     volumes:
       - .:/app
     working_dir: /app
-    command: sh -c "pip install --no-cache-dir . && python main.py"
+    command: sh -c "pip install --no-cache-dir uv && uv pip install --no-cache-dir . mypy --system && mypy --explicit-package-bases ."
+  pytest:
+    image: python:3.13-slim-trixie
+    container_name: app_tester
+    volumes:
+      - .:/app 
+    working_dir: /app
+    # Install dependencies and then run pytest
+    command: sh -c "pip install --no-cache-dir uv && uv pip install --no-cache-dir . pytest --system && pytest test.py"
     environment:
       - PYTHONUNBUFFERED=1
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=example_password
     depends_on:
-      - neo4j
+      # Ensures the database container is up before running tests
+      neo4j:
+        condition: service_healthy 
+  python_app:
+    image: python:3.13-slim-trixie
+    container_name: python_with_polars
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: sh -c "pip install --no-cache-dir uv && uv pip install --no-cache-dir . --system && uvicorn app.api:app --app-dir src --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=src
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=example_password
+      # Serve dashboard aggregated summary from Neo4j 
+      - FLYWIRE_SUMMARY_SOURCE=neo4j
+      - FLYWIRE_SUMMARY_DATASET_ID=flywire
+      # Force dashboard pairs endpoint to read from Neo4j
+      - FLYWIRE_PAIRS_SOURCE=neo4j
+    depends_on:
+      neo4j:
+        condition: service_healthy
 
   neo4j:
     image: neo4j:5.18
     container_name: neo4j_db
     restart: unless-stopped
     ports:
-      - "7474:7474"   # Neo4j Browser (web UI)
       - "7687:7687"   # Bolt protocol for drivers
     environment:
       - NEO4J_AUTH=neo4j/example_password
       - NEO4J_dbms_memory_pagecache_size=1G
       - NEO4J_dbms_memory_heap_initial__size=1G
       - NEO4J_dbms_memory_heap_max__size=1G
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:7474"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     volumes:
       - neo4j_data:/data
       - neo4j_logs:/logs

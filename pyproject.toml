@@ -5,7 +5,33 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "fastapi>=0.124.2",
+    "httpx>=0.28.1",
+    "matplotlib>=3.10.8",
+    "mypy>=1.19.0",
     "neo4j>=6.0.3",
+    "numpy>=2.3.5",
+    "pandas>=2.3.3",
     "polars>=1.35.2",
+    "pyarrow>=22.0.0",
     "pytest>=9.0.1",
+    "uvicorn>=0.38.0",
+]
+[tool.mypy]
+python_version = "3.13"
+disallow_untyped_defs = true
+strict = false
+ignore_missing_imports = true
+[tool.setuptools]
+# Use the find method to automatically discover packages in 'src'
+package-dir = {"" = "src"}
+[project.scripts]
+# Define a script named 'big-data-final' that runs your main function
+"big-data-final" = "app.main:main"
+
+[tool.pytest.ini_options]
+python_files = [
+    "test.py",
+    "test_*.py",
+    "*_test.py",
 ]
