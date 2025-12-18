@@ -1,15 +1,18 @@
-"""
-    Testing of the module in CI/CD pipeline of docker-compose.yaml
+"""CI tests for Neo4j connectivity, ETL, and dashboard data provenance.
 
-    Uses pytest to run tests on the database connection and ETL process. 
+These tests are intended to run in docker-compose CI where Neo4j is available.
 """
+
+import json
 import os
 from typing import Generator
+
 import pytest
 from neo4j import Driver
 
-from src.app.db import get_driver, close_driver, check_connection
-from src.app.etl import load_connections_arrow
+from app.aggregates_to_neo4j import push_summary_json_to_neo4j
+from app.db import check_connection, close_driver, get_driver
+from app.etl import load_connections_arrow
 
 # 1. FIXTURE: Handles Setup and Teardown automatically
 @pytest.fixture(scope="module")
@@ -84,3 +87,65 @@ def test_load_connections(neo4j_driver: Driver) -> None:
 
     assert rel_count > 0, "No relationships were created in Neo4j."
     assert node_count > 0, "No Neuron nodes were created in Neo4j."
+
+
+def test_dashboard_summary_is_from_neo4j(neo4j_driver: Driver, tmp_path) -> None:
+    """Prove the dashboard summary endpoint can be sourced from Neo4j.
+
+    We insert a known (:DatasetSummary {id}) record into Neo4j, then call the
+    dashboard summary function with its module-level source toggled to Neo4j.
+    """
+
+    dataset_id = "pytest-dashboard-summary"
+    expected_summary = {
+        "input": "pytest",
+        "max_rows": 1,
+        "total_rows": 1,
+        "unique": {},
+        "syn_count": {},
+    }
+
+    summary_path = tmp_path / "summary.json"
+    summary_path.write_text(json.dumps(expected_summary), encoding="utf-8")
+
+    push_summary_json_to_neo4j(
+        neo4j_driver,
+        summary_json_path=str(summary_path),
+        dataset_id=dataset_id,
+        clear_existing=True,
+    )
+
+    # Import here (after insert) so we can safely patch module-level constants.
+    from app import dashboard as dashboard_module
+
+    old_source = dashboard_module.SUMMARY_SOURCE
+    old_id = dashboard_module.SUMMARY_DATASET_ID
+    try:
+        dashboard_module.SUMMARY_SOURCE = "neo4j"
+        dashboard_module.SUMMARY_DATASET_ID = dataset_id
+
+        got = dashboard_module.dataset_summary()
+        assert got == expected_summary
+    finally:
+        dashboard_module.SUMMARY_SOURCE = old_source
+        dashboard_module.SUMMARY_DATASET_ID = old_id
+
+        with neo4j_driver.session() as session:
+            session.run("MATCH (s:DatasetSummary {id: $id}) DETACH DELETE s", id=dataset_id)
+
+
+def test_fastapi_up_and_neo4j_ok(neo4j_driver: Driver) -> None:
+    """Smoke test: FastAPI responds and Neo4j is reachable."""
+
+    from fastapi.testclient import TestClient
+
+    from app.api import app
+
+    client = TestClient(app)
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    assert resp.json() == {"status": "ok"}
+
+    # Confirm DB connectivity (uses the same driver fixture used elsewhere in CI).
+    check_connection(neo4j_driver)
+    neo4j_driver.verify_connectivity()
