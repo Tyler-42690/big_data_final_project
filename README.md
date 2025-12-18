@@ -421,7 +421,7 @@ http://127.0.0.1:8000/dashboard/syn_count
 
 ---
 
-## Deliverable Statement + Verification Steps (Rubric)
+## Deliverable Statement + Verification Steps
 
 ### Deliverable statement (what we built)
 
