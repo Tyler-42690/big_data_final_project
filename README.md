@@ -1,5 +1,5 @@
 ﻿# Flywire Data Visualization
-This codebase allows for visualization of the proofread flywire dataset (over 16 million rows). using **Flask** and **Polars**.  
+This codebase allows for visualization of the proofread flywire dataset (over 16 million rows).  
 It is designed to serve and visualize flywire data by user determined inputs like neurotransmitter probabilities, synapse count between neurons, and neuropils.
 
 ---
@@ -73,7 +73,8 @@ Note that the docker-compose.yaml file also automatically installs uv for depend
 ```
 
 ## Architecture
-
+The architecture of this app is as follows:
+![Architecture Diagram](docs/images/Flywire App.drawio.png)
 ## Step-by-step (Docker)
 
 1) Start Neo4j + API containers

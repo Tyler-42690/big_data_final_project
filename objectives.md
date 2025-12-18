@@ -24,7 +24,7 @@ Format can be JSON, CSV, Parquet, Avro or anything supported by the NOSQL databa
 
 Architecture and Setup
 
-Use Docker Compose or Free-tier Cloud (Docker Compose needs TO BE IMPLEMENTED)
+Use Docker Compose or Free-tier Cloud (Docker Compose DONE)
 
 Show how your cluster is structured (replica set, sharding, single-node, multi-node, etc.) (TO BE MADE)
 
@@ -43,7 +43,7 @@ Use Python with:
 
 ⦁	Logging (DONE)
 
-⦁	PyTest (at least 3 tests) (NEEDS TO BE IMPLEMENTED)
+⦁	PyTest (at least 3 tests) (NEEDS ONE MORE)
 
  
 
@@ -56,7 +56,7 @@ Raw Layer
 
 Clean Layer
 
-⦁	Handle missing values (CHECK FOR)
+⦁	Handle missing values (NOT APPLICABLE)
 
 ⦁	Normalize text (NOT APPLICABLE)
 
@@ -81,7 +81,7 @@ Use Streamlit or Matplotlib or Tableau or Power BI.
 
 ⦁	If using Tableau/Power BI, the data must come directly from your Big Data system (not flat files) (Matplotlib, DONE).
 
-⦁	Your dashboard should use the aggregated data (NEEDS IMPLEMENTATION).
+⦁	Your dashboard should use the aggregated data (DONE).
 
  
 

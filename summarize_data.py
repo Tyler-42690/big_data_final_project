@@ -4,7 +4,6 @@ import json
 import os
 
 import pyarrow as pa
-import pyarrow.compute as pc
 import pyarrow.ipc as ipc
 import polars as pl
 
