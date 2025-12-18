@@ -74,7 +74,8 @@ Note that the docker-compose.yaml file also automatically installs uv for depend
 
 ## Architecture
 The architecture of this app is as follows:
-![Architecture Diagram](docs/images/Flywire App.drawio.png)
+<img width="756" height="329" alt="image" src="https://github.com/user-attachments/assets/48c4cdd2-83f9-4de9-8e09-1154cf26456f" />
+
 ## Step-by-step (Docker)
 
 1) Start Neo4j + API containers
@@ -481,6 +482,7 @@ If your rubric requires that even the dashboard *pairs list* comes from the Big 
 - `FLYWIRE_PAIRS_SOURCE=neo4j`
 
 Note: this requires the relationships to be loaded into Neo4j via the ETL step; otherwise `/dataset/pairs` will return fewer/empty results.
+
 
 
 
