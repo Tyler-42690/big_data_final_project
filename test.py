@@ -6,13 +6,13 @@ These tests are intended to run in docker-compose CI where Neo4j is available.
 import json
 import os
 from typing import Generator
-
+import pathlib as pathLib
 import pytest
 from neo4j import Driver
 
-from app.aggregates_to_neo4j import push_summary_json_to_neo4j
-from app.db import check_connection, close_driver, get_driver
-from app.etl import load_connections_arrow
+from src.app.aggregates_to_neo4j import push_summary_json_to_neo4j
+from src.app.db import check_connection, close_driver, get_driver
+from src.app.etl import load_connections_arrow
 
 # 1. FIXTURE: Handles Setup and Teardown automatically
 @pytest.fixture(scope="module")
@@ -89,7 +89,7 @@ def test_load_connections(neo4j_driver: Driver) -> None:
     assert node_count > 0, "No Neuron nodes were created in Neo4j."
 
 
-def test_dashboard_summary_is_from_neo4j(neo4j_driver: Driver, tmp_path) -> None:
+def test_dashboard_summary_is_from_neo4j(neo4j_driver: Driver, tmp_path:pathLib.Path) -> None:
     """Prove the dashboard summary endpoint can be sourced from Neo4j.
 
     We insert a known (:DatasetSummary {id}) record into Neo4j, then call the
@@ -116,7 +116,7 @@ def test_dashboard_summary_is_from_neo4j(neo4j_driver: Driver, tmp_path) -> None
     )
 
     # Import here (after insert) so we can safely patch module-level constants.
-    from app import dashboard as dashboard_module
+    from src.app import dashboard as dashboard_module
 
     old_source = dashboard_module.SUMMARY_SOURCE
     old_id = dashboard_module.SUMMARY_DATASET_ID
@@ -139,7 +139,7 @@ def test_fastapi_up_and_neo4j_ok(neo4j_driver: Driver) -> None:
 
     from fastapi.testclient import TestClient
 
-    from app.api import app
+    from src.app.api import app
 
     client = TestClient(app)
     resp = client.get("/health")
